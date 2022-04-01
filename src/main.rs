@@ -1,6 +1,6 @@
-use std::fs;
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let git_ignore: String = fs::read_to_string(".gitignore")?.parse()?;
-    println!("{}", git_ignore);
-    Ok(())
+fn main() {
+    if let Err(e) = washme::get_args().and_then(washme::run) {
+        eprintln!("{}", e);
+        std::process::exit(1)
+    }
 }
