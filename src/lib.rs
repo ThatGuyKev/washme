@@ -1,7 +1,7 @@
 use clap::{App, Arg};
 use std::error::Error;
-use std::fs::{self, DirEntry};
-use std::io;
+use std::fs::{self, read_dir, DirEntry, File};
+use std::io::{self, BufRead};
 use std::path::Path;
 
 const COMMENT_TAG: char = '#';
@@ -39,30 +39,34 @@ pub fn get_args() -> WashResult<Config> {
     })
 }
 pub fn run(config: Config) -> WashResult<()> {
-    if config.all {
-        for path in config.path {
-            println!("{}", path);
-            let mut git_ignore_path: String = path.to_owned();
-            git_ignore_path.push_str("/.gitignore");
-            let files_to_remove: String = fs::read_to_string(git_ignore_path)?.parse()?;
+    for path in config.path {
+        let mut git_ignore_path: String = path.to_owned();
+        git_ignore_path.push_str("/.gitignore");
 
-            let folders = files_to_remove.split("\n");
-            for folder in folders {
-                let firstchar = folder.chars().next().unwrap();
-                if firstchar == COMMENT_TAG || firstchar == ALL_TAG {
-                    continue;
+        if let Ok(lines) = read_lines(git_ignore_path) {
+            for line in lines {
+                if let Ok(file) = line {
+                    if file.trim().is_empty() || is_comment(&file) {
+                        continue;
+                    }
+                    println!("{}", file)
                 }
-                println!(" {}", folder);
-                let mut remove_file: String = path.to_owned();
-                remove_file.push_str(folder);
-
-                fs::remove_dir_all(remove_file)?;
             }
         }
-        Ok(())
-    } else {
-        Ok(())
+        // let folders = files_to_remove.split("\n");
+        // for folder in folders {
+        //     let firstchar = folder.chars().next().unwrap();
+        //     if firstchar == COMMENT_TAG || firstchar == ALL_TAG {
+        //         continue;
+        //     }
+        //     println!(" {}", folder);
+        //     let mut remove_file: String = path.to_owned();
+        //     remove_file.push_str(folder);
+
+        //     fs::remove_dir_all(remove_file)?;
+        // }
     }
+    Ok(())
 }
 
 fn do_something(entry: &DirEntry) {}
@@ -91,4 +95,19 @@ fn collect_entries() -> io::Result<()> {
     entries.sort();
 
     Ok(())
+}
+
+fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+where
+    P: AsRef<Path>,
+{
+    let file = File::open(filename)?;
+    Ok(io::BufReader::new(file).lines())
+}
+
+fn is_comment(line: &String) -> bool {
+    if line.chars().next().unwrap() == COMMENT_TAG {
+        return true;
+    }
+    false
 }
