@@ -5,7 +5,6 @@ use std::io::{self, BufRead};
 use std::path::Path;
 
 const COMMENT_TAG: char = '#';
-const ALL_TAG: char = '*';
 
 type WashResult<T> = Result<T, Box<dyn Error>>;
 
@@ -45,14 +44,17 @@ pub fn run(config: Config) -> WashResult<()> {
 
         if let Ok(lines) = read_lines(git_ignore_path) {
             for line in lines {
+                // remove comments and empty lines
                 if let Ok(file) = line {
                     if file.trim().is_empty() || is_comment(&file) {
                         continue;
                     }
+                    // TODO: push to regex like to find all directories and files and store them in Vec<Path>
                     println!("{}", file)
                 }
             }
         }
+        // * OLD IMPLEMENTATION OF REMOVING FOLDER/DIRECTORIES ** DO NOT USE **
         // let folders = files_to_remove.split("\n");
         // for folder in folders {
         //     let firstchar = folder.chars().next().unwrap();
@@ -68,8 +70,6 @@ pub fn run(config: Config) -> WashResult<()> {
     }
     Ok(())
 }
-
-fn do_something(entry: &DirEntry) {}
 
 // one possible implementation of walking a directory only visiting files
 fn visit_dirs(dir: &Path, cb: &dyn Fn(&DirEntry)) -> io::Result<()> {
